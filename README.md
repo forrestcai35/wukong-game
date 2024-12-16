@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/forrestcai35/wukong-jump">
-    <img src="sprites/logo.png" alt="Logo" width="80" height="80">
+    <img src="sprites/logos.png" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">Wukong Jump</h3>
