@@ -1,93 +1,174 @@
-import pygame
-import sys
-# Initialize Pygame
+import pygame, sys, random
+
 pygame.init()
 
-# Screen Dimensions
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Sun Wukong: The Monkey King's Journey")
+# Screen dimensions
+WIDTH, HEIGHT = 400, 600
+FPS = 60
 
-# Clock for controlling frame rate
-clock = pygame.time.Clock()
+# Colors
+BG_COLOR = (135, 206, 250)  # Light sky blue
 
-# Colors (temporary)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GREEN = (34, 139, 34)
+# Font
+font = pygame.font.SysFont(None, 36)
 
-# Player attributes
-player_width = 50
-player_height = 60
-player_x = 100
-player_y = HEIGHT - player_height - 100  # Start above ground level
-player_speed = 5
-player_jump_speed = -15
-gravity = 1
-on_ground = False
-y_velocity = 0
+class Player:
+    def __init__(self, x, y, player_img):
+        self.x = x
+        self.y = y
+        self.dx = 0
+        self.dy = 0
+        self.gravity = 0.5
+        self.jump_strength = -10
+        self.image = player_img
+        self.rect = self.image.get_rect(center=(self.x, self.y))
 
-# Load player image or use a placeholder
-# Replace with an actual Wukong sprite later
-player_surf = pygame.Surface((player_width, player_height))
-player_surf.fill(GREEN)
+    def update(self, width, height):
+        # Apply horizontal movement
+        self.x += self.dx
+        # Wrap horizontally
+        if self.x < 0:
+            self.x = width
+        elif self.x > width:
+            self.x = 0
 
-# Ground (temporary)
-ground_height = 100
-ground_rect = pygame.Rect(0, HEIGHT - ground_height, WIDTH, ground_height)
+        # Apply vertical movement
+        self.y += self.dy
+        self.dy += self.gravity
 
-# Basic font for text
-font = pygame.font.SysFont(None, 24)
+        self.rect.topleft = (self.x, self.y)
 
-# Game loop variables
-running = True
+    def jump(self):
+        self.dy = self.jump_strength
 
-while running:
-    clock.tick(60)  # 60 FPS
-    
-    # Event Handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    
-    # Key Presses
-    keys = pygame.key.get_pressed()
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
 
-    # Horizontal movement
-    if keys[pygame.K_LEFT]:
-        player_x -= player_speed
-    if keys[pygame.K_RIGHT]:
-        player_x += player_speed
+class Platform:
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect(topleft=(x, y))
 
-    # Jumping
-    if keys[pygame.K_SPACE] and on_ground:
-        y_velocity = player_jump_speed
-        on_ground = False
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
 
-    # Gravity
-    y_velocity += gravity
-    player_y += y_velocity
+class Game:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Journey To The West")
+        self.clock = pygame.time.Clock()
 
-    # Collision with ground
-    if player_y + player_height > HEIGHT - ground_height:
-        player_y = HEIGHT - ground_height - player_height
-        y_velocity = 0
-        on_ground = True
+        # Load images
+        self.player_img = pygame.image.load("sprites/wukong.png").convert_alpha()
+        self.player_img = pygame.transform.scale(self.player_img, (80, 80))
+        self.platform_img = pygame.image.load("sprites/nimbus.png").convert_alpha()
+        self.platform_img = pygame.transform.scale(self.platform_img, (100, 30))
 
-    # Drawing
-    screen.fill(WHITE)
+        # Initialize player
+        self.player = Player(WIDTH // 2, HEIGHT // 2, self.player_img)
 
-    # Draw ground
-    pygame.draw.rect(screen, BLACK, ground_rect)
+        # Initialize platforms
+        self.num_platforms = 10
+        self.platforms = self._generate_initial_platforms()
 
-    # Draw player
-    screen.blit(player_surf, (player_x, player_y))
+        self.score = 0
+        self.running = True
 
-    # Temporary instructions text
-    instructions_text = font.render("Use LEFT/RIGHT to move, SPACE to jump", True, BLACK)
-    screen.blit(instructions_text, (10, 10))
+    def _generate_initial_platforms(self):
+        platforms = []
+        for i in range(self.num_platforms):
+            x = random.randint(0, WIDTH - self.platform_img.get_width())
+            y = HEIGHT - (i * 80) - 50
+            platforms.append(Platform(x, y, self.platform_img))
+        # Sort by y coordinate
+        platforms.sort(key=lambda p: p.rect.y)
+        return platforms
 
-    pygame.display.flip()
+    def _create_platform(self, topmost_y):
+        x = random.randint(0, WIDTH - self.platform_img.get_width())
+        y = topmost_y - 80
+        return Platform(x, y, self.platform_img)
 
-pygame.quit()
-sys.exit()
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.player.dx = -5
+        elif keys[pygame.K_RIGHT]:
+            self.player.dx = 5
+        else:
+            self.player.dx = 0
+
+    def check_collisions(self):
+        # Check for platform collision only if player is falling downwards
+        if self.player.dy > 0:
+            for p in self.platforms:
+                if (self.player.rect.colliderect(p.rect) and
+                        (self.player.y + self.player.rect.height - self.player.dy) < p.rect.y):
+                    self.player.y = p.rect.y - self.player.rect.height
+                    self.player.jump()  # Player jumps again on collision
+
+    def scroll_world(self):
+        # If player is higher than a quarter up the screen, move platforms down
+        if self.player.y < HEIGHT // 4:
+            diff = (HEIGHT // 4) - self.player.y
+            self.player.y = HEIGHT // 4
+            for p in self.platforms:
+                p.rect.y += diff
+
+            # Remove platforms that fall off the screen
+            self.platforms = [p for p in self.platforms if p.rect.y <= HEIGHT]
+
+            # Sort to find topmost platform and create new ones if needed
+            self.platforms.sort(key=lambda p: p.rect.y)
+            while len(self.platforms) < self.num_platforms:
+                topmost_platform = self.platforms[0]
+                new_p = self._create_platform(topmost_platform.rect.y)
+                self.platforms.append(new_p)
+                self.platforms.sort(key=lambda p: p.rect.y)
+                self.score += 10
+
+    def run(self):
+        while self.running:
+            self.clock.tick(FPS)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+            # Handle input
+            self.handle_input()
+
+            # Update player
+            self.player.update(WIDTH, HEIGHT)
+
+            # Check collisions
+            self.check_collisions()
+
+            # Scroll the world if player moves upward
+            self.scroll_world()
+
+            # Check game over condition
+            if self.player.y > HEIGHT:
+                self.running = False
+
+            # Drawing
+            self.screen.fill(BG_COLOR)
+            # Draw platforms
+            for p in self.platforms:
+                p.draw(self.screen)
+            # Draw player
+            self.player.draw(self.screen)
+
+            # Draw score
+            score_text = font.render(f"Score: {self.score}", True, (0,0,0))
+            self.screen.blit(score_text, (10, 10))
+
+            pygame.display.flip()
+
+        pygame.quit()
+        sys.exit()
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
