@@ -10,7 +10,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/forrestcai35/wukong-game">
+  <a href="https://github.com/forrestcai35/wukong-jump">
     <img src="sprites/logo.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -84,7 +84,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Email: forrestcai35@gmail.com
 
-Project Link: [https://github.com/forrestcai35/ChefMate](https://github.com/forrestcai35/)
+Project Link: [https://github.com/forrestcai35/wukong-jump](https://github.com/wukong-jump/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
