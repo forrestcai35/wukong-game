@@ -47,7 +47,7 @@ Make sure you have Python 3.+ installed, installation can be found at [https://w
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/forrestcai35/ChefMate
+   git clone https://github.com/forrestcai35/wukong-jump
    ```
 2. Create a virtual environment
    ```sh
@@ -65,8 +65,12 @@ Make sure you have Python 3.+ installed, installation can be found at [https://w
 
 
 
-<!-- USAGE EXAMPLES -->
-## Usage
+<!-- Gameplay EXAMPLES -->
+## Gameplay
+
+  <a href="https://github.com/forrestcai35/wukong-jump">
+    <img src="sprites/gameplay.png">
+  </a>
 
 
 
