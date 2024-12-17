@@ -52,6 +52,22 @@ class Platform:
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
 
+class CollectibleTalisman:
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+class CollectibleFruit:
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -60,9 +76,15 @@ class Game:
 
         # Load images
         self.player_img = pygame.image.load("sprites/wukong.png").convert_alpha()
-        self.player_img = pygame.transform.scale(self.player_img, (80, 80))
+        self.player_img = pygame.transform.scale(self.player_img, (90, 90))
         self.platform_img = pygame.image.load("sprites/nimbus.png").convert_alpha()
-        self.platform_img = pygame.transform.scale(self.platform_img, (100, 30))
+        self.platform_img = pygame.transform.scale(self.platform_img, (100, 25))
+
+        # Load collectible images
+        self.talisman_img = pygame.image.load("sprites/talisman.png").convert_alpha()
+        self.talisman_img = pygame.transform.scale(self.talisman_img, (50, 50))
+        self.fruit_img = pygame.image.load("sprites/fruit.png").convert_alpha()
+        self.fruit_img = pygame.transform.scale(self.fruit_img, (50, 50))
 
         # Initialize player
         self.player = Player(WIDTH // 2, HEIGHT // 2, self.player_img)
@@ -70,6 +92,13 @@ class Game:
         # Initialize platforms
         self.num_platforms = 10
         self.platforms = self._generate_initial_platforms()
+
+        # Lists for collectibles
+        self.talismans = []
+        self.fruits = []
+
+        # Possibly place some initial collectibles
+        self._place_initial_collectibles()
 
         self.score = 0
         self.running = True
@@ -89,6 +118,36 @@ class Game:
         y = topmost_y - 80
         return Platform(x, y, self.platform_img)
 
+    def _place_initial_collectibles(self):
+        # Randomly place a few collectibles on existing platforms
+        for p in self.platforms:
+            # With some probability, place a talisman or fruit
+            if random.random() < 0.3:  # 30% chance to place a collectible
+                if random.random() < 0.5:
+                    # Place a talisman
+                    tx = p.rect.centerx
+                    ty = p.rect.y - 20  # just above the platform
+                    self.talismans.append(CollectibleTalisman(tx, ty, self.talisman_img))
+                else:
+                    # Place a fruit
+                    fx = p.rect.centerx
+                    fy = p.rect.y - 20
+                    self.fruits.append(CollectibleFruit(fx, fy, self.fruit_img))
+
+    def _add_collectibles_on_new_platform(self, platform):
+        # Chance to add collectibles to newly generated platforms
+        if random.random() < 0.3:
+            if random.random() < 0.5:
+                # Add a talisman
+                tx = platform.rect.centerx
+                ty = platform.rect.y - 20
+                self.talismans.append(CollectibleTalisman(tx, ty, self.talisman_img))
+            else:
+                # Add a fruit
+                fx = platform.rect.centerx
+                fy = platform.rect.y - 20
+                self.fruits.append(CollectibleFruit(fx, fy, self.fruit_img))
+
     def handle_input(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
@@ -107,6 +166,19 @@ class Game:
                     self.player.y = p.rect.y - self.player.rect.height
                     self.player.jump()  # Player jumps again on collision
 
+        # Check collectible collisions
+        # Talisman
+        for t in self.talismans[:]:
+            if self.player.rect.colliderect(t.rect):
+                self.score += 20  # Award points for a talisman
+                self.talismans.remove(t)
+
+        # Fruit
+        for f in self.fruits[:]:
+            if self.player.rect.colliderect(f.rect):
+                self.score += 15  # Award points for a fruit
+                self.fruits.remove(f)
+
     def scroll_world(self):
         # If player is higher than a quarter up the screen, move platforms down
         if self.player.y < HEIGHT // 4:
@@ -114,9 +186,15 @@ class Game:
             self.player.y = HEIGHT // 4
             for p in self.platforms:
                 p.rect.y += diff
+            for t in self.talismans:
+                t.rect.y += diff
+            for f in self.fruits:
+                f.rect.y += diff
 
-            # Remove platforms that fall off the screen
+            # Remove platforms (and associated collectibles) that fall off the screen
             self.platforms = [p for p in self.platforms if p.rect.y <= HEIGHT]
+            self.talismans = [t for t in self.talismans if t.rect.y <= HEIGHT]
+            self.fruits = [f for f in self.fruits if f.rect.y <= HEIGHT]
 
             # Sort to find topmost platform and create new ones if needed
             self.platforms.sort(key=lambda p: p.rect.y)
@@ -126,6 +204,9 @@ class Game:
                 self.platforms.append(new_p)
                 self.platforms.sort(key=lambda p: p.rect.y)
                 self.score += 10
+
+                # Add collectibles on new platform
+                self._add_collectibles_on_new_platform(new_p)
 
     def run(self):
         while self.running:
@@ -157,6 +238,11 @@ class Game:
             # Draw platforms
             for p in self.platforms:
                 p.draw(self.screen)
+            # Draw collectibles
+            for t in self.talismans:
+                t.draw(self.screen)
+            for f in self.fruits:
+                f.draw(self.screen)
             # Draw player
             self.player.draw(self.screen)
 

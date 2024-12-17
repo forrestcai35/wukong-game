@@ -11,7 +11,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/forrestcai35/wukong-jump">
-    <img src="sprites/logos.png" alt="Logo" width="80" height="80">
+    <img src="sprites/logo.png" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">Wukong Jump</h3>
@@ -26,7 +26,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-
+Wukong Jump is a mythologically-inspired platformer game that reimagines the story of the Monkey King, Sun Wukong, from the classic Chinese epic Journey to the West.
 
 ### Built With
 [![Python][python-shield]][python-url]
